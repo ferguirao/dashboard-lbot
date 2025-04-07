@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Landbot Product Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h2 {
+      margin-top: 3rem;
+    }
+    .chart-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Landbot Activation Dashboard</h1>
+
+  <!-- Unified User Journey Chart -->
+  <div class="chart-container">
+    <h2>User Journey: From Landing Page to Bot Received Message</h2>
+    <canvas id="funnelChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <h2>Activation by Signup Date – % Who Received First Message</h2>
+    <table id="cohortTable" style="width: 100%; border-collapse: collapse; text-align: center;">
+      <thead>
+        <tr>
+          <th style="border: 1px solid #ccc; padding: 8px;">Signup Week</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 0</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 1</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 2</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 3</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 4</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 5</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 6</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Day 7</th>
+        </tr>
+      </thead>
+      <tbody id="cohortBody">
+        <!-- Se rellena con JS -->
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-container">
+    <h2>Product Retention by Signup Cohort</h2>
+    <canvas id="retentionChart"></canvas>
+  </div>
+  <script>
+const ctx = document.getElementById('funnelChart').getContext('2d');
+
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [
+      'Landing Page Viewed',
+      'Signed Up',
+      'Dashboard Viewed',
+      'Bot Created',
+      'Bot Edited',
+      'Bot Previewed',
+      'Node Added to Bot',
+      'Bot Received First Message'
+    ],
+    datasets: [{
+      label: 'Users',
+      data: [1000, 600, 550, 200, 120, 90, 100, 50],
+      backgroundColor: '#4e79a7'
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: {
+        beginAtZero: true,
+        max: 1000,
+        title: {
+          display: true,
+          text: 'Number of Users'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const value = context.raw;
+            const percent = ((value / 1000) * 100).toFixed(1);
+            return `${value} users (${percent}%)`;
+          }
+        }
+      }
+    }
+  }
+});
+
+const cohorts = [
+  { week: 'Mar 1', values: [100, 30, 15, 10, 8, 7, 6.5, 6] },
+  { week: 'Mar 8', values: [100, 28, 14, 9, 7, 6.5, 6.2, 6] },
+  { week: 'Mar 15', values: [100, 35, 18, 12, 9, 8, 7, 6.5] },
+  { week: 'Mar 22', values: [100, 25, 12, 7, 5, 4, 3.8, 3.5] }
+];
+
+function getHeatColor(value) {
+  const alpha = Math.min(value / 100, 1);
+  return `rgba(78, 121, 167, ${alpha})`;
+}
+
+const tbody = document.getElementById('cohortBody');
+cohorts.forEach(row => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="border: 1px solid #ccc; padding: 8px;">Week of ${row.week}</td>
+    ${row.values.map(val => `
+      <td style="
+        border: 1px solid #ccc; 
+        padding: 8px; 
+        background-color: ${getHeatColor(val)};
+        color: white;
+      ">${val}%</td>`).join('')}
+  `;
+  tbody.appendChild(tr);
+});
+const retentionCtx = document.getElementById('retentionChart').getContext('2d');
+
+new Chart(retentionCtx, {
+  type: 'line',
+  data: {
+    labels: ['Week 0', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'],
+    datasets: [{
+      label: 'Login Activity (%)',
+      data: [100, 40, 25, 20, 18, 17, 16.5, 16],
+      borderColor: '#4e79a7',
+      fill: false,
+      tension: 0.3
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: context => `${context.raw}% of users active`
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        title: {
+          display: true,
+          text: '% Active Users'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Weeks After Signup'
+        }
+      }
+    }
+  }
+});
+
+// Extend Customer Churn to Month 6
+const churnTimeCanvas = document.createElement('canvas');
+churnTimeCanvas.id = 'churnTimeChart';
+document.body.insertAdjacentHTML('beforeend', `
+  <div class="chart-container">
+    <h2>Customer Churn Over Time</h2>
+  </div>
+`);
+document.querySelector('.chart-container:last-of-type').appendChild(churnTimeCanvas);
+
+new Chart(churnTimeCanvas.getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'],
+    datasets: [{
+      label: 'Churned Customers (%)',
+      data: [60, 20, 10, 5, 3, 2],
+      backgroundColor: '#e15759'
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        title: {
+          display: true,
+          text: 'Churn Rate (%)'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Months After Payment'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      }
+    }
+  }
+});
+
+// Replace Conversion Chart with SignUp to Paid Funnel
+const conversionCanvas = document.createElement('canvas');
+conversionCanvas.id = 'conversionChart';
+document.body.insertAdjacentHTML('beforeend', `
+  <div class="chart-container">
+    <h2>Sign Up to Paid Conversion (Week 1)</h2>
+  </div>
+`);
+document.querySelector('.chart-container:last-of-type').appendChild(conversionCanvas);
+
+new Chart(conversionCanvas.getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Signed Up', 'Converted to Paid (Week 1)'],
+    datasets: [{
+      label: 'Users',
+      data: [600, 300],
+      backgroundColor: ['#4e79a7', '#f28e2b']
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: {
+        beginAtZero: true,
+        max: 600,
+        title: {
+          display: true,
+          text: 'Number of Users'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const value = context.raw;
+            const percent = ((value / 600) * 100).toFixed(1);
+            return `${value} users (${percent}%)`;
+          }
+        }
+      }
+    }
+  }
+});
+  </script>
+
+</body>
+</html>
